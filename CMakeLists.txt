@@ -58,7 +58,7 @@ endif(ENABLE_CUDF)
 set(CURA_LIBRARY_NAME "cura${CURA_LIBRARY_FLAGS}")
 
 add_library("${CURA_LIBRARY_NAME}"
-    "${CMAKE_SOURCE_DIR}/src/foo.cpp")
+    "${CMAKE_SOURCE_DIR}/src/relational/parsers.cpp")
 
 include_directories("${CMAKE_SOURCE_DIR}/include" "${RAPIDJSON_INCLUDE_DIRS}" "${ARROW_INCLUDE_DIR}")
 target_link_libraries("${CURA_LIBRARY_NAME}" PUBLIC arrow)
