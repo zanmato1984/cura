@@ -58,7 +58,16 @@ endif(ENABLE_CUDF)
 set(CURA_LIBRARY_NAME "cura${CURA_LIBRARY_FLAGS}")
 
 add_library("${CURA_LIBRARY_NAME}"
-    "${CMAKE_SOURCE_DIR}/src/relational/parsers.cpp")
+    "${CMAKE_SOURCE_DIR}/src/data/fragment.cpp"
+    "${CMAKE_SOURCE_DIR}/src/driver/option.cpp"
+    "${CMAKE_SOURCE_DIR}/src/execution/context.cpp"
+    "${CMAKE_SOURCE_DIR}/src/execution/executor.cpp"
+    "${CMAKE_SOURCE_DIR}/src/execution/memory_resource.cpp"
+    "${CMAKE_SOURCE_DIR}/src/execution/pipeline.cpp"
+    "${CMAKE_SOURCE_DIR}/src/kernel/kernel.cpp"
+    "${CMAKE_SOURCE_DIR}/src/kernel/sources.cpp"
+    "${CMAKE_SOURCE_DIR}/src/relational/parsers.cpp"
+    "${CMAKE_SOURCE_DIR}/src/type/data_type.cpp")
 
 include_directories("${CMAKE_SOURCE_DIR}/include" "${RAPIDJSON_INCLUDE_DIRS}" "${ARROW_INCLUDE_DIR}")
 target_link_libraries("${CURA_LIBRARY_NAME}" PUBLIC arrow)
