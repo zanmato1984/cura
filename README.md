@@ -1,2 +1,1 @@
-# cura
-CURA - CUDA Relational Algebra
+# CURA - CUDA Relational Algebra
