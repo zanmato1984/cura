@@ -27,22 +27,33 @@ endif(DISABLE_DEPRECATION_WARNING)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(ENABLE_ASAN "Enable build with ASAN")
+option(ENABLE_CUDF "Enable CUDF library which guides CURA to target GPU")
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 
 if(ENABLE_ASAN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
 endif(ENABLE_ASAN)
 
+if(ENABLE_CUDF)
+  message(STATUS "Building CURA targeting GPU")
+else()
   message(WARNING
     "Building CURA targeting CPU, "
     "this mode is only for purposes of demo and study on non-CUDA devices, "
     "thus some features may be unimplemented or definitely suboptimal")
+endif(ENABLE_CUDF)
 
 include(cmake/find/rapidjson.cmake)
 include(cmake/find/arrow.cmake)
 
+if(ENABLE_CUDF)
+  include(cmake/find/cudf.cmake)
+  add_definitions(-DUSE_CUDF)
+  set(TARGET_DEPENDENT_SOURCE_SUFFIX "cu")
+else()
   set(CURA_LIBRARY_FLAGS "${CURA_PACKAGE_FLAGS}_cpu")
   set(TARGET_DEPENDENT_SOURCE_SUFFIX "cpp")
+endif(ENABLE_CUDF)
 
 set(CURA_LIBRARY_NAME "cura${CURA_LIBRARY_FLAGS}")
 
@@ -51,5 +62,10 @@ add_library("${CURA_LIBRARY_NAME}"
 
 include_directories("${CMAKE_SOURCE_DIR}/include" "${RAPIDJSON_INCLUDE_DIRS}" "${ARROW_INCLUDE_DIR}")
 target_link_libraries("${CURA_LIBRARY_NAME}" PUBLIC arrow)
+
+if(ENABLE_CUDF)
+  target_include_directories("${CURA_LIBRARY_NAME}" PUBLIC "${CUDA_INCLUDE_DIR}" "${CUDF_INCLUDE_DIR}" "${CUDF_LIBCUDACXX_INCLUDE_DIR}")
+  target_link_libraries("${CURA_LIBRARY_NAME}" PUBLIC "${CUDA_LIBRARY}" "${CUDA_RT_LIBRARY}" "${CUDF_LIBRARIES}" "${RMM_LIBRARY}")
+endif(ENABLE_CUDF)
 
 message(STATUS "CURA_TEST_LIST set to: ${CURA_TEST_LIST}")
