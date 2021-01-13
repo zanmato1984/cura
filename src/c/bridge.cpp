@@ -2,8 +2,6 @@
 
 #include <arrow/c/abi.h>
 #include <arrow/c/bridge.h>
-#include <iostream>
-#include <string>
 
 #ifdef __cplusplus
 extern "C" {
