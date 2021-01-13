@@ -1,7 +1,6 @@
 package cura
 
 // #include "c/arrow.h"
-//
 // #include <cura/c/api.h>
 // #include <stdlib.h>
 import (

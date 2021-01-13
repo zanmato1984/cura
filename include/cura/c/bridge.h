@@ -1,10 +1,7 @@
 #ifndef BRIDGE_H
 #define BRIDGE_H
 
-#include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,6 +9,9 @@ extern "C" {
 
 struct ArrowSchema;
 struct ArrowArray;
+
+typedef struct ArrowSchema ArrowSchema;
+typedef struct ArrowArray ArrowArray;
 
 void trivial_release_schema(ArrowSchema *p);
 
