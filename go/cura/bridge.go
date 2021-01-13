@@ -1,6 +1,6 @@
 package cura
 
-// #include "c/bridge.h"
+// #include <cura/c/bridge.h>
 import (
 	"C"
 )

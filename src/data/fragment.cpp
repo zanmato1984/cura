@@ -4,7 +4,6 @@
 
 namespace cura::data {
 
-
 Fragment::Fragment(std::vector<std::shared_ptr<const Column>> columns_)
     : columns(std::move(columns_)) {
   CURA_ASSERT(!columns.empty(), "No column in fragment");

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ARROW_H
+#define ARROW_H
 
 #include <stdint.h>
 
@@ -39,3 +40,5 @@ struct ArrowArray {
 
 typedef struct ArrowSchema ArrowSchema;
 typedef struct ArrowArray ArrowArray;
+
+#endif

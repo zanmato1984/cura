@@ -16,9 +16,7 @@ struct Literal : public Expression {
 
   std::string toString() const override;
 
-  template <typename T> T value() const {
-    CURA_FAIL("Unimplemented");
-  }
+  template <typename T> T value() const { CURA_FAIL("Unimplemented"); }
 
 private:
   DataType data_type;

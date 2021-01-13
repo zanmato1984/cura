@@ -10,15 +10,12 @@ namespace cura::execution {
 
 namespace detail {
 
-template <typename T>
-struct LightWeightMemoryResource : public MemoryResource {
-  explicit LightWeightMemoryResource(const Option &option)
-  {
+template <typename T> struct LightWeightMemoryResource : public MemoryResource {
+  explicit LightWeightMemoryResource(const Option &option) {
     l = arrow::MemoryPool::CreateDefault();
   }
 
-  ~LightWeightMemoryResource() {
-  }
+  ~LightWeightMemoryResource() {}
 
   Underlying *preConcatenate(ThreadId thread_id) const override {
     return l.get();
@@ -48,8 +45,7 @@ private:
 template <typename T>
 struct LightWeightPerThreadMemoryResource : public MemoryResource {
   LightWeightPerThreadMemoryResource(const Option &option)
-      :
-        thread_ls(option.threads_per_pipeline) {
+      : thread_ls(option.threads_per_pipeline) {
     CURA_ASSERT(option.memory_resource_size,
                 "LightWeightPerThreadMemoryResource size must not be zero");
     CURA_ASSERT(
@@ -77,8 +73,7 @@ struct LightWeightPerThreadMemoryResource : public MemoryResource {
     }
   }
 
-  ~LightWeightPerThreadMemoryResource() {
-  }
+  ~LightWeightPerThreadMemoryResource() {}
 
   Underlying *preConcatenate(ThreadId thread_id) const override {
     CURA_ASSERT(thread_id < thread_ls.size(),
