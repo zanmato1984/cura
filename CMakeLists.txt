@@ -60,6 +60,7 @@ set(CURA_LIBRARY_NAME "cura${CURA_LIBRARY_FLAGS}")
 add_library("${CURA_LIBRARY_NAME}"
     "${CMAKE_SOURCE_DIR}/src/data/fragment.cpp"
     "${CMAKE_SOURCE_DIR}/src/driver/option.cpp"
+    "${CMAKE_SOURCE_DIR}/src/c/api.cpp"
     "${CMAKE_SOURCE_DIR}/src/execution/context.cpp"
     "${CMAKE_SOURCE_DIR}/src/execution/executor.cpp"
     "${CMAKE_SOURCE_DIR}/src/execution/memory_resource.cpp"
