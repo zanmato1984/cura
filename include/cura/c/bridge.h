@@ -1,8 +1,8 @@
 #pragma once
 
-#include "arrow.h"
-
 #include <cura/c/api.h>
+#include <cura/c/arrow.h>
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
