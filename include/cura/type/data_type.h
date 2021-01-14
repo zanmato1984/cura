@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 
+#ifdef USE_CUDF
+#include <cudf/types.hpp>
+#endif
+
 namespace cura::type {
 
 #define APPLY_FOR_TYPE_IDS(ACTION)                                             \
@@ -82,12 +86,20 @@ struct DataType {
                               bool nullable_ = false)
       : type_id(type_id_), nullable(nullable_) {}
 
+#ifdef USE_CUDF
+  explicit DataType(cudf::type_id type_id_, bool nullable_ = false);
+#endif
+
   explicit DataType(std::shared_ptr<arrow::DataType> data_type,
                     bool nullable_ = false);
 
   std::string toString() const;
 
   bool operator==(const DataType &other) const;
+
+#ifdef USE_CUDF
+  operator cudf::data_type() const;
+#endif
 
   std::shared_ptr<arrow::DataType> arrow() const;
 
