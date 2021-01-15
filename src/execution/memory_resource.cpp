@@ -4,18 +4,57 @@
 
 #include <string>
 
+#ifdef USE_CUDF
+#include <rmm/mr/device/arena_memory_resource.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
+#else
 #include <arrow/memory_pool.h>
+#endif
 
 namespace cura::execution {
 
 namespace detail {
 
-template <typename T> struct LightWeightMemoryResource : public MemoryResource {
-  explicit LightWeightMemoryResource(const Option &option) {
+#ifdef USE_CUDF
+template <typename PT, template <typename> typename LT>
+#else
+template <typename T>
+#endif
+struct LightWeightMemoryResource : public MemoryResource {
+  explicit LightWeightMemoryResource(const Option &option)
+#ifdef USE_CUDF
+      : orig_default(nullptr) {
+#else
+  {
+#endif
+#ifdef USE_CUDF
+    p = std::make_unique<PT>();
+    if (option.memory_resource_size) {
+      l = std::make_unique<LT<PT>>(p.get(), option.memory_resource_size,
+                                   option.memory_resource_size);
+    } else {
+      l = std::make_unique<LT<PT>>(p.get());
+    }
+    CURA_ASSERT(l, "LightWeightMemoryResource allocation failed");
+
+    if (option.exclusive_default_memory_resource) {
+      orig_default = rmm::mr::set_current_device_resource(l.get());
+    }
+#else
     l = arrow::MemoryPool::CreateDefault();
+#endif
   }
 
-  ~LightWeightMemoryResource() {}
+  ~LightWeightMemoryResource() {
+#ifdef USE_CUDF
+    if (orig_default) {
+      rmm::mr::set_current_device_resource(orig_default);
+    }
+#endif
+  }
 
   Underlying *preConcatenate(ThreadId thread_id) const override {
     return l.get();
@@ -39,13 +78,28 @@ protected:
   void reclaimConverge() override {}
 
 private:
+#ifdef USE_CUDF
+  std::unique_ptr<PT> p;
+  std::unique_ptr<LT<PT>> l;
+  Underlying *orig_default;
+#else
   std::unique_ptr<T> l;
+#endif
 };
 
+#ifdef USE_CUDF
+template <typename PT, template <typename> typename LT>
+#else
 template <typename T>
+#endif
 struct LightWeightPerThreadMemoryResource : public MemoryResource {
   LightWeightPerThreadMemoryResource(const Option &option)
-      : thread_ls(option.threads_per_pipeline) {
+      :
+#ifdef USE_CUDF
+        thread_ps(option.threads_per_pipeline), orig_default(nullptr),
+#endif
+        thread_ls(option.threads_per_pipeline) {
+#ifdef USE_CUDF
     CURA_ASSERT(option.memory_resource_size,
                 "LightWeightPerThreadMemoryResource size must not be zero");
     CURA_ASSERT(
@@ -71,9 +125,21 @@ struct LightWeightPerThreadMemoryResource : public MemoryResource {
       CURA_ASSERT(thread_ls[i], "LightWeightPerThreadMemoryResource "
                                 "per thread allocation failed");
     }
+#else
+    l = arrow::MemoryPool::CreateDefault();
+    for (size_t i = 0; i < option.threads_per_pipeline; i++) {
+      thread_ls[i] = arrow::MemoryPool::CreateDefault();
+    }
+#endif
   }
 
-  ~LightWeightPerThreadMemoryResource() {}
+  ~LightWeightPerThreadMemoryResource() {
+#ifdef USE_CUDF
+    if (orig_default) {
+      rmm::mr::set_current_device_resource(orig_default);
+    }
+#endif
+  }
 
   Underlying *preConcatenate(ThreadId thread_id) const override {
     CURA_ASSERT(thread_id < thread_ls.size(),
@@ -101,13 +167,25 @@ protected:
   void reclaimConverge() override {}
 
 private:
+#ifdef USE_CUDF
+  std::unique_ptr<PT> p;
+  std::vector<std::unique_ptr<PT>> thread_ps;
+  std::unique_ptr<LT<PT>> l;
+  std::vector<std::unique_ptr<LT<PT>>> thread_ls;
+  Underlying *orig_default;
+#else
   std::unique_ptr<T> l;
   std::vector<std::unique_ptr<T>> thread_ls;
+#endif
 };
 
 template <typename T> struct PrimitiveMemoryResource : public MemoryResource {
   explicit PrimitiveMemoryResource(const Option &option) {
+#ifdef USE_CUDF
+    mr = std::make_unique<T>();
+#else
     mr = arrow::MemoryPool::CreateDefault();
+#endif
   }
 
   Underlying *preConcatenate(ThreadId thread_id) const override {
@@ -135,6 +213,25 @@ private:
   std::unique_ptr<T> mr;
 };
 
+#ifdef USE_CUDF
+using ManagedUnderlying = rmm::mr::managed_memory_resource;
+using CudaUnderlying = rmm::mr::cuda_memory_resource;
+using LightWeightPrimitiveUnderlying = CudaUnderlying;
+template <typename T> using ArenaUnderlying = rmm::mr::arena_memory_resource<T>;
+template <typename T> using PoolUnderlying = rmm::mr::pool_memory_resource<T>;
+using ArenaMemoryResource =
+    LightWeightMemoryResource<LightWeightPrimitiveUnderlying, ArenaUnderlying>;
+using ArenaPerThreadMemoryResource =
+    LightWeightPerThreadMemoryResource<LightWeightPrimitiveUnderlying,
+                                       ArenaUnderlying>;
+using PoolMemoryResource =
+    LightWeightMemoryResource<LightWeightPrimitiveUnderlying, PoolUnderlying>;
+using PoolPerThreadMemoryResource =
+    LightWeightPerThreadMemoryResource<LightWeightPrimitiveUnderlying,
+                                       PoolUnderlying>;
+using ManagedMemoryResource = PrimitiveMemoryResource<ManagedUnderlying>;
+using CudaMemoryResource = PrimitiveMemoryResource<CudaUnderlying>;
+#else
 using ArenaMemoryResource = LightWeightMemoryResource<arrow::MemoryPool>;
 using ArenaPerThreadMemoryResource =
     LightWeightPerThreadMemoryResource<arrow::MemoryPool>;
@@ -143,6 +240,7 @@ using PoolPerThreadMemoryResource =
     LightWeightPerThreadMemoryResource<arrow::MemoryPool>;
 using ManagedMemoryResource = PrimitiveMemoryResource<arrow::MemoryPool>;
 using CudaMemoryResource = PrimitiveMemoryResource<arrow::MemoryPool>;
+#endif
 
 } // namespace detail
 

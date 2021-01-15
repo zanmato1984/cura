@@ -4,6 +4,11 @@
 
 #include <algorithm>
 
+#ifdef USE_CUDF
+#include <cudf/table/table.hpp>
+#include <cudf/table/table_view.hpp>
+#endif
+
 namespace cura::data {
 
 struct ColumnScalar;
@@ -14,6 +19,10 @@ using cura::type::Schema;
 
 struct Fragment {
   explicit Fragment(std::vector<std::shared_ptr<const Column>> columns_);
+
+#ifdef USE_CUDF
+  explicit Fragment(const Schema &schema, std::unique_ptr<cudf::table> &&table);
+#endif
 
   explicit Fragment(std::shared_ptr<arrow::RecordBatch> record_batch);
 
@@ -40,6 +49,10 @@ struct Fragment {
   auto begin() const { return std::cbegin(columns); }
   auto end() { return std::end(columns); }
   auto end() const { return std::cend(columns); }
+
+#ifdef USE_CUDF
+  cudf::table_view cudf() const;
+#endif
 
   std::shared_ptr<arrow::RecordBatch> arrow() const;
 

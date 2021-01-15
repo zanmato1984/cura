@@ -7,6 +7,10 @@
 #include <sstream>
 #include <string>
 
+#ifdef USE_CUDF
+#include <cudf/interop.hpp>
+#endif
+
 namespace cura::execution {
 
 namespace detail {
@@ -163,6 +167,54 @@ void stringifyTreeHorizontal(
   line_map.emplace(root, first_line);
 }
 
+#ifdef USE_CUDF
+std::shared_ptr<Fragment> copyToCudf(const Context &ctx, ThreadId thread_id,
+                                     std::shared_ptr<const Fragment> fragment) {
+  if (!fragment) {
+    return nullptr;
+  }
+
+  auto rb = fragment->arrow();
+  Schema fragment_schema;
+  {
+    for (size_t i = 0; i < rb->num_columns(); i++) {
+      const auto &field = rb->schema()->field(i);
+      fragment_schema.emplace_back(field->type(), field->nullable());
+    }
+  }
+  const auto &arrow_table =
+      CURA_GET_ARROW_RESULT(arrow::Table::FromRecordBatches({rb}));
+  auto cudf_table = cudf::from_arrow(
+      *arrow_table, ctx.memory_resource->preConcatenate(thread_id));
+  return std::make_shared<Fragment>(fragment_schema, std::move(cudf_table));
+}
+
+std::shared_ptr<Fragment>
+copyToArrow(std::shared_ptr<const Fragment> fragment) {
+  if (!fragment) {
+    return nullptr;
+  }
+
+  auto tv = fragment->cudf();
+  std::vector<cudf::column_metadata> metas(tv.num_columns());
+  auto arrow_table = cudf::to_arrow(tv, metas);
+  std::vector<std::shared_ptr<arrow::Array>> arrow_cols(
+      arrow_table->num_columns());
+  {
+    const auto &arrow_chunks = arrow_table->columns();
+    std::transform(arrow_chunks.begin(), arrow_chunks.end(), arrow_cols.begin(),
+                   [](const auto &chunk) {
+                     CURA_ASSERT(chunk->num_chunks() == 1,
+                                 "Invalid arrow table from cudf");
+                     return chunk->chunk(0);
+                   });
+  }
+  auto rb = arrow::RecordBatch::Make(
+      arrow_table->schema(), arrow_table->num_rows(), std::move(arrow_cols));
+  return std::make_shared<Fragment>(rb);
+}
+#endif
+
 } // namespace detail
 
 Pipeline::Pipeline(PipelineId id_, bool is_final_,
@@ -196,7 +248,12 @@ void Pipeline::push(const Context &ctx, ThreadId thread_id, SourceId source_id,
     CURA_ASSERT(!fragment,
                 "push an heap source with not-null fragment is not allowed");
   }
+#ifdef USE_CUDF
+  auto cudf = detail::copyToCudf(ctx, thread_id, fragment);
+  getSource(source_id)->push(ctx, thread_id, VoidKernelId, cudf);
+#else
   getSource(source_id)->push(ctx, thread_id, VoidKernelId, fragment);
+#endif
 }
 
 std::shared_ptr<const Fragment>
@@ -207,8 +264,15 @@ Pipeline::stream(const Context &ctx, ThreadId thread_id, SourceId source_id,
     CURA_ASSERT(!fragment,
                 "stream an heap source with not-null fragment is not allowed");
   }
+#ifdef USE_CUDF
+  auto cudf = detail::copyToCudf(ctx, thread_id, fragment);
+  auto ret =
+      getSource(source_id)->stream(ctx, thread_id, VoidKernelId, cudf, rows);
+  return detail::copyToArrow(ret);
+#else
   return getSource(source_id)->stream(ctx, thread_id, VoidKernelId, fragment,
                                       rows);
+#endif
 }
 
 std::string Pipeline::toString() const {
