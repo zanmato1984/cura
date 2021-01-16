@@ -73,6 +73,10 @@ struct Aggregation : public Op {
 
   const DataType &dataType() const override { return data_type; }
 
+  std::shared_ptr<const Column>
+  evaluate(const Context &ctx, ThreadId thread_id,
+           const Fragment &fragment) const override;
+
   std::string name() const override { return "Aggregation"; }
 
   std::string toString() const override {

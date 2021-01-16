@@ -24,6 +24,10 @@ struct TiUnaryOp : public BaseUnaryOp {
       : BaseUnaryOp(operand, std::move(data_type)),
         unary_operator(unary_operator_) {}
 
+  std::shared_ptr<const Column>
+  evaluate(const Context &ctx, ThreadId thread_id,
+           const Fragment &fragment) const override;
+
   std::string name() const override { return "TiUnaryOp"; }
 
   std::string operatorToString() const override {

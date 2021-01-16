@@ -57,6 +57,8 @@ endif(ENABLE_CUDF)
 
 set(CURA_LIBRARY_NAME "cura${CURA_LIBRARY_FLAGS}")
 
+set(TARGET_DEPENDENT_SOURCES "${CMAKE_SOURCE_DIR}/src/expression/extract_year.${TARGET_DEPENDENT_SOURCE_SUFFIX}")
+
 add_library("${CURA_LIBRARY_NAME}"
     "${CMAKE_SOURCE_DIR}/src/c/api.cpp"
     "${CMAKE_SOURCE_DIR}/src/c/bridge.cpp"
@@ -68,6 +70,12 @@ add_library("${CURA_LIBRARY_NAME}"
     "${CMAKE_SOURCE_DIR}/src/execution/executor.cpp"
     "${CMAKE_SOURCE_DIR}/src/execution/memory_resource.cpp"
     "${CMAKE_SOURCE_DIR}/src/execution/pipeline.cpp"
+    "${CMAKE_SOURCE_DIR}/src/expression/aggregation.cpp"
+    "${CMAKE_SOURCE_DIR}/src/expression/binary_op.cpp"
+    "${CMAKE_SOURCE_DIR}/src/expression/expressions.cpp"
+    "${CMAKE_SOURCE_DIR}/src/expression/literal.cpp"
+    "${CMAKE_SOURCE_DIR}/src/expression/ti_unary_op.cpp"
+    "${CMAKE_SOURCE_DIR}/src/expression/unary_op.cpp"
     "${CMAKE_SOURCE_DIR}/src/kernel/aggregate.cpp"
     "${CMAKE_SOURCE_DIR}/src/kernel/aggregate_helper.cpp"
     "${CMAKE_SOURCE_DIR}/src/kernel/bucket_aggregate.cpp"
@@ -86,7 +94,8 @@ add_library("${CURA_LIBRARY_NAME}"
     "${CMAKE_SOURCE_DIR}/src/planning/planner.cpp"
     "${CMAKE_SOURCE_DIR}/src/planning/validators.cpp"
     "${CMAKE_SOURCE_DIR}/src/relational/parsers.cpp"
-    "${CMAKE_SOURCE_DIR}/src/type/data_type.cpp")
+    "${CMAKE_SOURCE_DIR}/src/type/data_type.cpp"
+    "${TARGET_DEPENDENT_SOURCES}")
 
 include_directories("${CMAKE_SOURCE_DIR}/include" "${RAPIDJSON_INCLUDE_DIRS}" "${ARROW_INCLUDE_DIR}")
 target_link_libraries("${CURA_LIBRARY_NAME}" PUBLIC arrow)

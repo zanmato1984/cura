@@ -35,7 +35,12 @@ private:
 private:
   mutable std::mutex push_mutex;
   mutable std::vector<std::shared_ptr<const Fragment>> pushed_fragments;
+#ifdef USE_CUDF
+  mutable std::vector<std::vector<std::shared_ptr<const Fragment>>>
+      fragment_buckets;
+#else
   mutable std::shared_ptr<const Fragment> concatenated_fragment;
+#endif
   mutable std::shared_ptr<const Fragment> converged_fragment;
 };
 

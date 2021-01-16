@@ -24,6 +24,10 @@ struct Expression {
 
   virtual const DataType &dataType() const = 0;
 
+  virtual std::shared_ptr<const Column>
+  evaluate(const Context &ctx, ThreadId thread_id,
+           const Fragment &fragment) const = 0;
+
   virtual std::string name() const = 0;
 
   virtual std::string toString() const { return name(); }
@@ -36,6 +40,10 @@ struct ColumnRef : public Expression {
       : idx(idx_), data_type(std::move(data_type_)) {}
 
   const DataType &dataType() const override { return data_type; }
+
+  std::shared_ptr<const Column>
+  evaluate(const Context &ctx, ThreadId thread_id,
+           const Fragment &fragment) const override;
 
   std::string name() const override { return "Column"; }
 
