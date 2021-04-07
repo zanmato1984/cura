@@ -98,7 +98,7 @@ PipelineChain mergePipelineChains(std::vector<PipelineChain> &pipeline_chains) {
 } // namespace detail
 
 std::list<std::unique_ptr<Pipeline>>
-PipelineGenerator::genPipelines(std::shared_ptr<const Rel> rel) && {
+PipelineGenerator::genPipelines(const std::shared_ptr<const Rel> &rel) && {
   auto kernel = visit(rel);
   auto it = pipeline_chains.find(kernel);
   CURA_ASSERT(it != pipeline_chains.end(),
@@ -122,40 +122,40 @@ PipelineGenerator::genPipelines(std::shared_ptr<const Rel> rel) && {
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::visitInputSource(
-    std::shared_ptr<const RelInputSource> input_source,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<const RelInputSource> &input_source,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   return combineResult(makeKernel<InputSource>(input_source->sourceId()),
                        children);
 }
 
-std::shared_ptr<Kernel>
-PipelineGenerator::visitFilter(std::shared_ptr<const RelFilter> filter,
-                               std::vector<std::shared_ptr<Kernel>> &children) {
+std::shared_ptr<Kernel> PipelineGenerator::visitFilter(
+    const std::shared_ptr<const RelFilter> &filter,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   return combineResult(
       makeKernel<Filter>(filter->output(), filter->condition()), children);
 }
 
-std::shared_ptr<Kernel>
-PipelineGenerator::visitUnion(std::shared_ptr<const RelUnion> u,
-                              std::vector<std::shared_ptr<Kernel>> &children) {
+std::shared_ptr<Kernel> PipelineGenerator::visitUnion(
+    const std::shared_ptr<const RelUnion> &u,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   return combineResult(makeKernel<Union>(u->output()), children);
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::visitUnionAll(
-    std::shared_ptr<const RelUnionAll> union_all,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<const RelUnionAll> &union_all,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   return combineResult(makeKernel<UnionAll>(), children);
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::visitHashJoin(
-    std::shared_ptr<const RelHashJoin> hash_join,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<const RelHashJoin> &hash_join,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   CURA_FAIL("Pipeline generator shouldn't see RelHashJoin node directly");
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::visitHashJoinBuild(
-    std::shared_ptr<const RelHashJoinBuild> hash_join_build,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<const RelHashJoinBuild> &hash_join_build,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   std::vector<ColumnIdx> keys;
   for (const auto &key : hash_join_build->buildKeys()) {
     keys.emplace_back(key->columnIdx());
@@ -167,8 +167,8 @@ std::shared_ptr<Kernel> PipelineGenerator::visitHashJoinBuild(
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::visitHashJoinProbe(
-    std::shared_ptr<const RelHashJoinProbe> hash_join_probe,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<const RelHashJoinProbe> &hash_join_probe,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   auto it = hash_join_build_kernels.find(hash_join_probe->buildInput());
   CURA_ASSERT(it != hash_join_build_kernels.end(),
               "Corresponding hash join build kernel not found");
@@ -183,15 +183,15 @@ std::shared_ptr<Kernel> PipelineGenerator::visitHashJoinProbe(
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::visitProject(
-    std::shared_ptr<const RelProject> project,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<const RelProject> &project,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   auto kernel = makeKernel<Project>(project->expressions());
   return combineResult(kernel, children);
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::visitAggregate(
-    std::shared_ptr<const RelAggregate> aggregate,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<const RelAggregate> &aggregate,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   std::vector<ColumnIdx> keys(aggregate->groups().size());
   std::transform(aggregate->groups().begin(), aggregate->groups().end(),
                  keys.begin(), [](const auto &e) {
@@ -234,9 +234,9 @@ std::shared_ptr<Kernel> PipelineGenerator::visitAggregate(
   return combineResult(kernel, children);
 }
 
-std::shared_ptr<Kernel>
-PipelineGenerator::visitSort(std::shared_ptr<const RelSort> sort,
-                             std::vector<std::shared_ptr<Kernel>> &children) {
+std::shared_ptr<Kernel> PipelineGenerator::visitSort(
+    const std::shared_ptr<const RelSort> &sort,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   std::vector<PhysicalSortInfo> sort_infos(sort->sortInfos().size());
   std::transform(
       sort->sortInfos().begin(), sort->sortInfos().end(), sort_infos.begin(),
@@ -251,16 +251,16 @@ PipelineGenerator::visitSort(std::shared_ptr<const RelSort> sort,
   return combineResult(kernel, children);
 }
 
-std::shared_ptr<Kernel>
-PipelineGenerator::visitLimit(std::shared_ptr<const RelLimit> limit,
-                              std::vector<std::shared_ptr<Kernel>> &children) {
+std::shared_ptr<Kernel> PipelineGenerator::visitLimit(
+    const std::shared_ptr<const RelLimit> &limit,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   auto kernel = makeKernel<Limit>(limit->offset(), limit->n());
   return combineResult(kernel, children);
 }
 
 std::shared_ptr<Kernel> PipelineGenerator::combineResult(
-    std::shared_ptr<Kernel> parent,
-    std::vector<std::shared_ptr<Kernel>> &children) {
+    const std::shared_ptr<Kernel> &parent,
+    const std::vector<std::shared_ptr<Kernel>> &children) {
   CURA_ASSERT(parent, "Empty kernel");
 
   std::vector<detail::PipelineChain> child_pipeline_chains;

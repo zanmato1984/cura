@@ -3,8 +3,8 @@
 namespace cura::planning {
 
 std::vector<std::string>
-Explainer::defaultVisit(std::shared_ptr<const Rel> rel,
-                        std::vector<std::vector<std::string>> &children) {
+Explainer::defaultVisit(const std::shared_ptr<const Rel> &rel,
+                        const std::vector<std::vector<std::string>> &children) {
   std::vector<std::string> combined;
   combined.emplace_back(std::move(rel->toString()));
   for (size_t i = 0; i < children.size(); i++) {
