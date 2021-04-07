@@ -39,6 +39,8 @@ void testParser(std::shared_ptr<const Rel> rel) {
   std::cout << "======= Original Plan =======" << std::endl;
   explainRel(rel, true);
   auto json = toJson(rel);
+  std::cout << "======= Intermediate Json =======" << std::endl;
+  std::cout << json << std::endl;
   std::cout << "======= Re-parsed Plan =======" << std::endl;
   auto parsed = parseJson(json);
   explainRel(parsed, true);
