@@ -8,8 +8,8 @@ namespace cura::planning {
 struct HashJoinBreaker : public RelDeepCopyVisitor<HashJoinBreaker> {
   using Base = RelDeepCopyVisitor<HashJoinBreaker>;
   std::shared_ptr<const Rel>
-  deepCopyHashJoin(std::shared_ptr<const RelHashJoin> hash_join,
-                   std::vector<std::shared_ptr<const Rel>> &children);
+  deepCopyHashJoin(const std::shared_ptr<const RelHashJoin> &hash_join,
+                   const std::vector<std::shared_ptr<const Rel>> &children);
 };
 
 } // namespace cura::planning

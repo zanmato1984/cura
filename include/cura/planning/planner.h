@@ -27,9 +27,9 @@ struct Planner {
   explicit Planner(const Option &option_) : option(option_) {}
 
   std::list<std::unique_ptr<Pipeline>>
-  plan(std::shared_ptr<const Rel> rel) const;
+  plan(const std::shared_ptr<const Rel> &rel) const;
 
-  std::vector<std::string> explain(std::shared_ptr<const Rel> rel,
+  std::vector<std::string> explain(const std::shared_ptr<const Rel> &rel,
                                    bool extended = false) const;
 
 private:

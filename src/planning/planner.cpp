@@ -8,21 +8,21 @@
 namespace cura::planning {
 
 std::list<std::unique_ptr<Pipeline>>
-Planner::plan(std::shared_ptr<const Rel> rel) const {
+Planner::plan(const std::shared_ptr<const Rel> &rel) const {
   /// Basic validations on the given Rel.
   ColumnRefValidator().visit(rel);
 
   /// Break HashJoin within the given Rel.
-  rel = HashJoinBreaker().visit(rel);
+  auto new_rel = HashJoinBreaker().visit(rel);
 
   // TODO: Should transform Sort+Limit to TopN when we have a decent TopN
   // kernel.
 
   /// Generate pipelines for the given Rel.
-  return PipelineGenerator(option).genPipelines(rel);
+  return PipelineGenerator(option).genPipelines(new_rel);
 }
 
-std::vector<std::string> Planner::explain(std::shared_ptr<const Rel> rel,
+std::vector<std::string> Planner::explain(const std::shared_ptr<const Rel> &rel,
                                           bool extended) const {
   /// Basic validations on the given Rel.
   ColumnRefValidator().visit(rel);
@@ -44,13 +44,13 @@ std::vector<std::string> Planner::explain(std::shared_ptr<const Rel> rel,
   /// Physical explain of the generated pipelines.
   if (extended) {
     /// Break HashJoin within the given Rel.
-    rel = HashJoinBreaker().visit(rel);
+    auto new_rel = HashJoinBreaker().visit(rel);
 
     // TODO: Should transform Sort+Limit to TopN when we have a decent TopN
     // kernel.
 
     /// Generate pipelines for the given Rel.
-    auto pipelines = PipelineGenerator(option).genPipelines(rel);
+    auto pipelines = PipelineGenerator(option).genPipelines(new_rel);
 
     for (const auto &pipeline : pipelines) {
       result.emplace_back(pipeline->toString());

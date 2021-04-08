@@ -14,15 +14,15 @@ using cura::relational::RelVisitor;
 /// Validate that ColumnRef is within the bound of the children's output and of
 /// the same data type as the referred column.
 struct ColumnRefValidator : public RelVisitor<ColumnRefValidator, void> {
-  void visitFilter(std::shared_ptr<const RelFilter> filter);
+  void visitFilter(const std::shared_ptr<const RelFilter> &filter);
 
-  void visitHashJoin(std::shared_ptr<const RelHashJoin> hash_join);
+  void visitHashJoin(const std::shared_ptr<const RelHashJoin> &hash_join);
 
-  void visitProject(std::shared_ptr<const RelProject> project);
+  void visitProject(const std::shared_ptr<const RelProject> &project);
 
-  void visitAggregate(std::shared_ptr<const RelAggregate> aggregate);
+  void visitAggregate(const std::shared_ptr<const RelAggregate> &aggregate);
 
-  void visitSort(std::shared_ptr<const RelSort> sort);
+  void visitSort(const std::shared_ptr<const RelSort> &sort);
 };
 
 // TODO: Type check and inference.

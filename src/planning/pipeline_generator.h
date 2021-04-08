@@ -74,52 +74,52 @@ struct PipelineGenerator
   explicit PipelineGenerator(const Option &option_) : option(option_) {}
 
   std::list<std::unique_ptr<Pipeline>>
-  genPipelines(std::shared_ptr<const Rel> rel) &&;
+  genPipelines(const std::shared_ptr<const Rel> &rel) &&;
 
 public:
   std::shared_ptr<Kernel>
-  visitInputSource(std::shared_ptr<const RelInputSource> input_source,
-                   std::vector<std::shared_ptr<Kernel>> &children);
+  visitInputSource(const std::shared_ptr<const RelInputSource> &input_source,
+                   const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitFilter(std::shared_ptr<const RelFilter> filter,
-              std::vector<std::shared_ptr<Kernel>> &children);
+  visitFilter(const std::shared_ptr<const RelFilter> &filter,
+              const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitUnion(std::shared_ptr<const RelUnion> u,
-             std::vector<std::shared_ptr<Kernel>> &children);
+  visitUnion(const std::shared_ptr<const RelUnion> &u,
+             const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitUnionAll(std::shared_ptr<const RelUnionAll> union_all,
-                std::vector<std::shared_ptr<Kernel>> &children);
+  visitUnionAll(const std::shared_ptr<const RelUnionAll> &union_all,
+                const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitHashJoin(std::shared_ptr<const RelHashJoin> hash_join,
-                std::vector<std::shared_ptr<Kernel>> &children);
+  visitHashJoin(const std::shared_ptr<const RelHashJoin> &hash_join,
+                const std::vector<std::shared_ptr<Kernel>> &children);
+
+  std::shared_ptr<Kernel> visitHashJoinBuild(
+      const std::shared_ptr<const RelHashJoinBuild> &hash_join_build,
+      const std::vector<std::shared_ptr<Kernel>> &children);
+
+  std::shared_ptr<Kernel> visitHashJoinProbe(
+      const std::shared_ptr<const RelHashJoinProbe> &hash_join_probe,
+      const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitHashJoinBuild(std::shared_ptr<const RelHashJoinBuild> hash_join_build,
-                     std::vector<std::shared_ptr<Kernel>> &children);
+  visitProject(const std::shared_ptr<const RelProject> &project,
+               const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitHashJoinProbe(std::shared_ptr<const RelHashJoinProbe> hash_join_probe,
-                     std::vector<std::shared_ptr<Kernel>> &children);
+  visitAggregate(const std::shared_ptr<const RelAggregate> &aggregate,
+                 const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitProject(std::shared_ptr<const RelProject> project,
-               std::vector<std::shared_ptr<Kernel>> &children);
+  visitSort(const std::shared_ptr<const RelSort> &sort,
+            const std::vector<std::shared_ptr<Kernel>> &children);
 
   std::shared_ptr<Kernel>
-  visitAggregate(std::shared_ptr<const RelAggregate> aggregate,
-                 std::vector<std::shared_ptr<Kernel>> &children);
-
-  std::shared_ptr<Kernel>
-  visitSort(std::shared_ptr<const RelSort> sort,
-            std::vector<std::shared_ptr<Kernel>> &children);
-
-  std::shared_ptr<Kernel>
-  visitLimit(std::shared_ptr<const RelLimit> sort,
-             std::vector<std::shared_ptr<Kernel>> &children);
+  visitLimit(const std::shared_ptr<const RelLimit> &sort,
+             const std::vector<std::shared_ptr<Kernel>> &children);
 
 private:
   template <typename KernelType, typename... Args>
@@ -129,8 +129,8 @@ private:
   }
 
   std::shared_ptr<Kernel>
-  combineResult(std::shared_ptr<Kernel> parent,
-                std::vector<std::shared_ptr<Kernel>> &children);
+  combineResult(const std::shared_ptr<Kernel> &parent,
+                const std::vector<std::shared_ptr<Kernel>> &children);
 
 private:
   const Option &option;

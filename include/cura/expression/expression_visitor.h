@@ -8,7 +8,7 @@
 namespace cura::expression {
 
 template <typename Impl, typename Result> struct ExpressionVisitor {
-  Result visit(std::shared_ptr<const Expression> expression) {
+  Result visit(const std::shared_ptr<const Expression> &expression) {
     if (auto literal = std::dynamic_pointer_cast<const Literal>(expression);
         literal) {
       return impl().visitLiteral(literal);
@@ -31,20 +31,20 @@ template <typename Impl, typename Result> struct ExpressionVisitor {
     CURA_FAIL("Unknown Expression type.");
   }
 
-  Result visitLiteral(std::shared_ptr<const Literal> literal) {
+  Result visitLiteral(const std::shared_ptr<const Literal> &literal) {
     return impl().defaultVisit(literal, {});
   }
 
-  Result visitColumnRef(std::shared_ptr<const ColumnRef> column_ref) {
-    return impl().defaultVisit(column_ref, {});
+  Result visitColumnRef(const std::shared_ptr<const ColumnRef> &column_ref) {
+    return impl().defaultVisit(column_ref);
   }
 
-  Result visitOp(std::shared_ptr<const Op> op,
+  Result visitOp(const std::shared_ptr<const Op> &op,
                  const std::vector<Result> &children) {
     return impl().defaultVisit(op, children);
   }
 
-  Result defaultVisit(std::shared_ptr<const Expression>,
+  Result defaultVisit(const std::shared_ptr<const Expression> &,
                       const std::vector<Result> &children) {
     return {};
   }
@@ -59,7 +59,7 @@ private:
 };
 
 template <typename Impl> struct ExpressionVisitor<Impl, void> {
-  void visit(std::shared_ptr<const Expression> expression) {
+  void visit(const std::shared_ptr<const Expression> &expression) {
     if (auto literal = std::dynamic_pointer_cast<const Literal>(expression);
         literal) {
       impl().visitLiteral(literal);
@@ -84,17 +84,17 @@ template <typename Impl> struct ExpressionVisitor<Impl, void> {
     CURA_FAIL("Unknown Expression type.");
   }
 
-  void visitLiteral(std::shared_ptr<const Literal> literal) {
+  void visitLiteral(const std::shared_ptr<const Literal> &literal) {
     impl().defaultVisit(literal);
   }
 
-  void visitColumnRef(std::shared_ptr<const ColumnRef> column_ref) {
+  void visitColumnRef(const std::shared_ptr<const ColumnRef> &column_ref) {
     impl().defaultVisit(column_ref);
   }
 
-  void visitOp(std::shared_ptr<const Op> op) { impl().defaultVisit(op); }
+  void visitOp(const std::shared_ptr<const Op> &op) { impl().defaultVisit(op); }
 
-  void defaultVisit(std::shared_ptr<const Expression>) {}
+  void defaultVisit(const std::shared_ptr<const Expression> &) {}
 
 private:
   ExpressionVisitor() = default;

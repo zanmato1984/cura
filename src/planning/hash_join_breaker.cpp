@@ -21,10 +21,10 @@ using JoinKeys = std::pair<std::vector<std::shared_ptr<const ColumnRef>>,
 
 struct JoinConditionParser
     : public ExpressionVisitor<JoinConditionParser, void> {
-  JoinConditionParser(std::shared_ptr<const RelHashJoin> hash_join_)
+  JoinConditionParser(const std::shared_ptr<const RelHashJoin> &hash_join_)
       : hash_join(hash_join_) {}
 
-  void visitColumnRef(std::shared_ptr<const ColumnRef> column_ref) {
+  void visitColumnRef(const std::shared_ptr<const ColumnRef> &column_ref) {
     if (column_ref->columnIdx() < hash_join->left()->output().size()) {
       join_keys.first.emplace_back(column_ref);
     } else {
@@ -34,7 +34,7 @@ struct JoinConditionParser
     }
   }
 
-  void visitOp(std::shared_ptr<const Op> op) {
+  void visitOp(const std::shared_ptr<const Op> &op) {
     auto binary_op = std::dynamic_pointer_cast<const BinaryOp>(op);
     if (!binary_op) {
       CURA_FAIL("Invalid op in join condition: " + op->toString());
@@ -65,7 +65,7 @@ struct JoinConditionParser
     }
   }
 
-  void defaultVisit(std::shared_ptr<const Expression> e) {
+  void defaultVisit(const std::shared_ptr<const Expression> &e) {
     CURA_FAIL("Invalid join condition: " + e->toString());
   }
 
@@ -73,7 +73,8 @@ struct JoinConditionParser
   JoinKeys join_keys;
 };
 
-JoinKeys parseJoinCondition(std::shared_ptr<const RelHashJoin> hash_join) {
+JoinKeys
+parseJoinCondition(const std::shared_ptr<const RelHashJoin> &hash_join) {
   JoinConditionParser parser(hash_join);
   parser.visit(hash_join->condition());
   auto join_keys = std::move(parser.join_keys);
@@ -94,8 +95,8 @@ JoinKeys parseJoinCondition(std::shared_ptr<const RelHashJoin> hash_join) {
 } // namespace detail
 
 std::shared_ptr<const Rel> HashJoinBreaker::deepCopyHashJoin(
-    std::shared_ptr<const RelHashJoin> hash_join,
-    std::vector<std::shared_ptr<const Rel>> &children) {
+    const std::shared_ptr<const RelHashJoin> &hash_join,
+    const std::vector<std::shared_ptr<const Rel>> &children) {
   CURA_ASSERT(hash_join->inputs.size() == 2, "Invalid RelHashJoin node");
   auto keys = detail::parseJoinCondition(hash_join);
   auto build_side = hash_join->buildSide();
