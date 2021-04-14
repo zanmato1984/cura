@@ -236,7 +236,9 @@ std::shared_ptr<const Column> add(const Context &ctx, ThreadId thread_id,
   return createArrowColumnVector(result_type, res.make_array());
 }
 
-template <typename LeftColumn, typename RightColumn> struct Equal {
+template <typename LeftColumn, typename RightColumn,
+          arrow::compute::CompareOperator compareOp>
+struct Compare {
   template <typename LeftArrowType, typename RightArrowType,
             std::enable_if_t<!arrow::is_number_type<LeftArrowType>::value ||
                              !arrow::is_number_type<RightArrowType>::value> * =
@@ -248,8 +250,7 @@ template <typename LeftColumn, typename RightColumn> struct Equal {
         ctx.memory_resource->preConcatenate(thread_id));
     const auto &res = CURA_GET_ARROW_RESULT(arrow::compute::Compare(
         left->arrow(), right->arrow(),
-        arrow::compute::CompareOptions(arrow::compute::CompareOperator::EQUAL),
-        &context));
+        arrow::compute::CompareOptions(compareOp), &context));
     CURA_ASSERT(res.kind() == arrow::Datum::ARRAY,
                 "Binary op result must be an arrow array");
     return createArrowColumnVector(result_type, res.make_array());
@@ -273,8 +274,7 @@ template <typename LeftColumn, typename RightColumn> struct Equal {
     const auto &right_casted = CURA_GET_ARROW_RESULT(
         arrow::compute::Cast(right->arrow(), common_type));
     const auto &res = CURA_GET_ARROW_RESULT(arrow::compute::Compare(
-        left_casted, right_casted,
-        arrow::compute::CompareOptions(arrow::compute::CompareOperator::EQUAL),
+        left_casted, right_casted, arrow::compute::CompareOptions(compareOp),
         &context));
     CURA_ASSERT(res.kind() == arrow::Datum::ARRAY,
                 "Binary op result must be an arrow array");
@@ -284,13 +284,14 @@ template <typename LeftColumn, typename RightColumn> struct Equal {
   const DataType &result_type;
 };
 
-template <typename LeftColumn, typename RightColumn>
-std::shared_ptr<const Column> eq(const Context &ctx, ThreadId thread_id,
-                                 LeftColumn &&left, RightColumn &&right,
-                                 const DataType &result_type) {
-  Equal<LeftColumn, RightColumn> eq{result_type};
+template <typename LeftColumn, typename RightColumn,
+          arrow::compute::CompareOperator compareOp>
+std::shared_ptr<const Column> compare(const Context &ctx, ThreadId thread_id,
+                                      LeftColumn &&left, RightColumn &&right,
+                                      const DataType &result_type) {
+  Compare<LeftColumn, RightColumn, compareOp> compare{result_type};
   return dispatchDualTypes(ctx, thread_id, std::forward<LeftColumn>(left),
-                           std::forward<RightColumn>(right), eq);
+                           std::forward<RightColumn>(right), compare);
 }
 
 template <typename LeftColumn, typename RightColumn>
@@ -342,8 +343,35 @@ dispatchBinaryOperator(const Context &ctx, ThreadId thread_id,
     return add(ctx, thread_id, std::forward<LeftColumn>(left),
                std::forward<RightColumn>(right), result_type);
   case BinaryOperator::EQUAL:
-    return eq(ctx, thread_id, std::forward<LeftColumn>(left),
-              std::forward<RightColumn>(right), result_type);
+    return compare<LeftColumn, RightColumn,
+                   arrow::compute::CompareOperator::EQUAL>(
+        ctx, thread_id, std::forward<LeftColumn>(left),
+        std::forward<RightColumn>(right), result_type);
+  case BinaryOperator::NOT_EQUAL:
+    return compare<LeftColumn, RightColumn,
+                   arrow::compute::CompareOperator::NOT_EQUAL>(
+        ctx, thread_id, std::forward<LeftColumn>(left),
+        std::forward<RightColumn>(right), result_type);
+  case BinaryOperator::GREATER:
+    return compare<LeftColumn, RightColumn,
+                   arrow::compute::CompareOperator::GREATER>(
+        ctx, thread_id, std::forward<LeftColumn>(left),
+        std::forward<RightColumn>(right), result_type);
+  case BinaryOperator::GREATER_EQUAL:
+    return compare<LeftColumn, RightColumn,
+                   arrow::compute::CompareOperator::GREATER_EQUAL>(
+        ctx, thread_id, std::forward<LeftColumn>(left),
+        std::forward<RightColumn>(right), result_type);
+  case BinaryOperator::LESS:
+    return compare<LeftColumn, RightColumn,
+                   arrow::compute::CompareOperator::LESS>(
+        ctx, thread_id, std::forward<LeftColumn>(left),
+        std::forward<RightColumn>(right), result_type);
+  case BinaryOperator::LESS_EQUAL:
+    return compare<LeftColumn, RightColumn,
+                   arrow::compute::CompareOperator::LESS_EQUAL>(
+        ctx, thread_id, std::forward<LeftColumn>(left),
+        std::forward<RightColumn>(right), result_type);
   case BinaryOperator::LOGICAL_AND:
     return logicalAnd(ctx, thread_id, std::forward<LeftColumn>(left),
                       std::forward<RightColumn>(right), result_type);

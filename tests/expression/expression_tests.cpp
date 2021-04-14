@@ -48,31 +48,41 @@ TEST(ExpressionTest, VectorAddVector) {
   CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
 }
 
-TEST(ExpressionTest, VectorEqLiteralInt32) {
+TEST(ExpressionTest, VectorCompareLiteralInt32) {
   Option option;
   Context ctx(option);
 
   auto column_ref = std::make_shared<const ColumnRef>(0, DataType::int32Type());
   auto literal = std::make_shared<const Literal>(TypeId::INT32, 42);
-  auto eq = std::make_shared<const BinaryOp>(BinaryOperator::EQUAL, column_ref,
-                                             literal, DataType::bool8Type());
 
   auto cv_0 = makeDirectColumnVectorN<int32_t>(DataType::int32Type(), 5, 40);
   auto cv_1 =
       makeDirectColumnVector<int32_t>(DataType::int32Type(), {2, 4, 6, 8, 10});
   auto fragment = makeFragment(std::move(cv_0), std::move(cv_1));
 
-  auto c_res = eq->evaluate(ctx, 0, *fragment);
-  auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
-  ASSERT_NE(cv_res, nullptr);
-  ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
-  ASSERT_EQ(cv_res->size(), 5);
-  auto expected = makeDirectColumnVector<bool>(
-      DataType::bool8Type(), {false, false, true, false, false});
-  CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  auto compareOps = {BinaryOperator::LESS,    BinaryOperator::LESS_EQUAL,
+                     BinaryOperator::EQUAL,   BinaryOperator::GREATER_EQUAL,
+                     BinaryOperator::GREATER, BinaryOperator::NOT_EQUAL};
+  std::vector<std::vector<bool>> result = {
+      {true, true, false, false, false},  {true, true, true, false, false},
+      {false, false, true, false, false}, {false, false, true, true, true},
+      {false, false, false, true, true},  {true, true, false, true, true}};
+  for (size_t i = 0; i < compareOps.size(); i++) {
+    auto compare = std::make_shared<const BinaryOp>(
+        *(compareOps.begin() + i), column_ref, literal, DataType::bool8Type());
+    auto c_res = compare->evaluate(ctx, 0, *fragment);
+    auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
+    ASSERT_NE(cv_res, nullptr);
+    ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
+    ASSERT_EQ(cv_res->size(), 5);
+    auto expected = makeDirectColumnVector<bool>(
+        DataType::bool8Type(),
+        reinterpret_cast<std::vector<bool> &&>(result[i]));
+    CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  }
 }
 
-TEST(ExpressionTest, VectorEqLiteralString) {
+TEST(ExpressionTest, VectorCompareLiteralString) {
   Option option;
   Context ctx(option);
 
@@ -80,68 +90,97 @@ TEST(ExpressionTest, VectorEqLiteralString) {
       std::make_shared<const ColumnRef>(0, DataType::stringType());
   auto literal =
       std::make_shared<const Literal>(TypeId::STRING, std::string("test"));
-  auto eq = std::make_shared<const BinaryOp>(BinaryOperator::EQUAL, column_ref,
-                                             literal, DataType::bool8Type());
 
   auto cv_0 = makeDirectColumnVector<std::string>(
       DataType::stringType(), {"abc", "", "test", "def", "yes"});
   auto cv_1 = makeDirectColumnVectorN<int32_t>(DataType::int32Type(), 5, 40);
   auto fragment = makeFragment(std::move(cv_0), std::move(cv_1));
 
-  auto c_res = eq->evaluate(ctx, 0, *fragment);
-  auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
-  ASSERT_NE(cv_res, nullptr);
-  ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
-  ASSERT_EQ(cv_res->size(), 5);
-  auto expected = makeDirectColumnVector<bool>(
-      DataType::bool8Type(), {false, false, true, false, false});
-  CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  auto compareOps = {BinaryOperator::LESS,    BinaryOperator::LESS_EQUAL,
+                     BinaryOperator::EQUAL,   BinaryOperator::GREATER_EQUAL,
+                     BinaryOperator::GREATER, BinaryOperator::NOT_EQUAL};
+  std::vector<std::vector<bool>> result = {
+      {true, true, false, true, false},   {true, true, true, true, false},
+      {false, false, true, false, false}, {false, false, true, false, true},
+      {false, false, false, false, true}, {true, true, false, true, true}};
+  for (size_t i = 0; i < compareOps.size(); i++) {
+    auto compare = std::make_shared<const BinaryOp>(
+        *(compareOps.begin() + i), column_ref, literal, DataType::bool8Type());
+    auto c_res = compare->evaluate(ctx, 0, *fragment);
+    auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
+    ASSERT_NE(cv_res, nullptr);
+    ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
+    ASSERT_EQ(cv_res->size(), 5);
+    auto expected = makeDirectColumnVector<bool>(
+        DataType::bool8Type(),
+        reinterpret_cast<std::vector<bool> &&>(result[i]));
+    CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  }
 }
 
-TEST(ExpressionTest, VectorIntEqLiteralFloat64) {
+TEST(ExpressionTest, VectorIntCompareLiteralFloat64) {
   Option option;
   Context ctx(option);
 
   auto column_ref = std::make_shared<const ColumnRef>(0, DataType::int32Type());
   auto literal = std::make_shared<const Literal>(TypeId::FLOAT64, 42);
-  auto eq = std::make_shared<const BinaryOp>(BinaryOperator::EQUAL, column_ref,
-                                             literal, DataType::bool8Type());
-
   auto cv = makeDirectColumnVectorN<int32_t>(DataType::int32Type(), 3, 41);
   auto fragment = makeFragment(std::move(cv));
 
-  auto c_res = eq->evaluate(ctx, 0, *fragment);
-  auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
-  ASSERT_NE(cv_res, nullptr);
-  ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
-  ASSERT_EQ(cv_res->size(), 3);
-  auto expected =
-      makeDirectColumnVector<bool>(DataType::bool8Type(), {false, true, false});
-  CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  auto compareOps = {BinaryOperator::LESS,    BinaryOperator::LESS_EQUAL,
+                     BinaryOperator::EQUAL,   BinaryOperator::GREATER_EQUAL,
+                     BinaryOperator::GREATER, BinaryOperator::NOT_EQUAL};
+  std::vector<std::vector<bool>> result = {
+      {true, false, false}, {true, true, false},  {false, true, false},
+      {false, true, true},  {false, false, true}, {true, false, true}};
+
+  for (size_t i = 0; i < compareOps.size(); i++) {
+    auto compare = std::make_shared<const BinaryOp>(
+        *(compareOps.begin() + i), column_ref, literal, DataType::bool8Type());
+    auto c_res = compare->evaluate(ctx, 0, *fragment);
+    auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
+    ASSERT_NE(cv_res, nullptr);
+    ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
+    ASSERT_EQ(cv_res->size(), 3);
+    auto expected = makeDirectColumnVector<bool>(
+        DataType::bool8Type(),
+        reinterpret_cast<std::vector<bool> &&>(result[i]));
+    CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  }
 }
 
-TEST(ExpressionTest, VectorFloat32EqLiteralInt64) {
+TEST(ExpressionTest, VectorFloat32CompareLiteralInt64) {
   Option option;
   Context ctx(option);
 
   auto column_ref =
       std::make_shared<const ColumnRef>(0, DataType::float32Type());
   auto literal = std::make_shared<const Literal>(TypeId::UINT64, uint64_t{42});
-  auto eq = std::make_shared<const BinaryOp>(BinaryOperator::EQUAL, column_ref,
-                                             literal, DataType::bool8Type());
 
   auto cv = makeDirectColumnVector<float>(DataType::float32Type(),
                                           {12.3f, 42.00f, 42.42f});
   auto fragment = makeFragment(std::move(cv));
 
-  auto c_res = eq->evaluate(ctx, 0, *fragment);
-  auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
-  ASSERT_NE(cv_res, nullptr);
-  ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
-  ASSERT_EQ(cv_res->size(), 3);
-  auto expected =
-      makeDirectColumnVector<bool>(DataType::bool8Type(), {false, true, false});
-  CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  auto compareOps = {BinaryOperator::LESS,    BinaryOperator::LESS_EQUAL,
+                     BinaryOperator::EQUAL,   BinaryOperator::GREATER_EQUAL,
+                     BinaryOperator::GREATER, BinaryOperator::NOT_EQUAL};
+  std::vector<std::vector<bool>> result = {
+      {true, false, false}, {true, true, false},  {false, true, false},
+      {false, true, true},  {false, false, true}, {true, false, true}};
+
+  for (size_t i = 0; i < compareOps.size(); i++) {
+    auto compare = std::make_shared<const BinaryOp>(
+        *(compareOps.begin() + i), column_ref, literal, DataType::bool8Type());
+    auto c_res = compare->evaluate(ctx, 0, *fragment);
+    auto cv_res = std::dynamic_pointer_cast<const ColumnVector>(c_res);
+    ASSERT_NE(cv_res, nullptr);
+    ASSERT_EQ(cv_res->dataType(), DataType::bool8Type());
+    ASSERT_EQ(cv_res->size(), 3);
+    auto expected = makeDirectColumnVector<bool>(
+        DataType::bool8Type(),
+        reinterpret_cast<std::vector<bool> &&>(result[i]));
+    CURA_TEST_EXPECT_COLUMNS_EQUAL(expected, cv_res);
+  }
 }
 
 TEST(ExpressionTest, VectorAddVectorEqLiteral) {
