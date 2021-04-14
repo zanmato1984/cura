@@ -6,4 +6,7 @@ Official document comming soon.
 
 # Acknoledgement
 
-This project is powered by [<img src="docs/jetbrains-variant-3.svg">](https://www.jetbrains.com/).
+This project is powered by:
+* [cuDF](https://github.com/rapidsai/cudf)
+* [Apache Arrow](https://github.com/apache/arrow)
+* [<img src="docs/jetbrains-variant-3.svg">](https://www.jetbrains.com/)
